@@ -7,7 +7,15 @@ const app = express();
 try {
     (async() => {
         await mongoose.connect(`${process.env.DATABASE_URI}/${DB_NAME}`);
-        app.on()
+        //DB is connected but express app has some error
+        app.on('error', (error) => {
+            console.log('ERROR: ', error);
+            throw(error);
+        })
+
+        app.listen(process.env.PORT, () => {
+            console.log(`App listening on port: ${process.env.PORT}`)
+        })
     }
     )();
 
