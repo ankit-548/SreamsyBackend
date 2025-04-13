@@ -11,7 +11,7 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 // })
 const registerUser = asyncHandler(async (req, res) => {
     // GET user details from frontend
-    const [userName, email, fullName, password] = req.body();
+    const {userName, email, fullName, password} = req.body;
     // validation - not empty
     if([userName, email, fullName, password].some((field) => 
         {
@@ -21,7 +21,7 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(400, 'All fields are required');        
     }
     // check if user already exist - userName or email
-    const existedUser = User.findOne({ 
+    const existedUser = await User.findOne({ 
         $or:[{userName}, {email}]
     })
     if(existedUser) {
@@ -29,7 +29,7 @@ const registerUser = asyncHandler(async (req, res) => {
     }
     // check for images, check for avatar
     const avatarLocalpath = req.files?.avatar[0]?.path;
-    const coverImgaeLocalPath = req.files?.coverImgae[0]?.path;
+    const coverImgaeLocalPath = req.files?.coverImage[0]?.path;
 
     if(!avatarLocalpath) {
         throw new ApiError(400, "Avatar file is required");
@@ -42,9 +42,9 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(400, 'Avatar file is required');
     }
     // create user object - create entry in db
-    const user = User.create({
+    const user = await User.create({
         fullName,
-        username : toLowerCase(userName),
+        userName : userName.toLowerCase(),
         email,
         password, 
         avatar : avatar.url,
@@ -53,7 +53,7 @@ const registerUser = asyncHandler(async (req, res) => {
     
     // remove password and refresh token field from reference
     const createdUser = await User.findById(user._id).select(
-        "-password -refreshToken"
+        
     );
     // check for user creation 
     if(!createdUser) {
