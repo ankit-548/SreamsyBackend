@@ -77,4 +77,23 @@ const loginUser = asyncHandler(async (req, res) => {
     // response with cookies
 });
 
-export {registerUser, loginUser}
+const logOutUser = asyncHandler(async (req, res) => {
+    const user = req.user;
+    User.findByIdAndUpdate(user._id, {
+        refreshToken: undefined
+    },
+    {
+      new: true  
+    });
+
+    const options = {
+        httpOnly: true,
+        secured: true
+    }
+
+    return res.status(200)
+    .clearCookies('accessToken', options)
+    .clearCookies('refreshToken', options)
+});
+
+export {registerUser, loginUser, logOutUser}
