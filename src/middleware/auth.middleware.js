@@ -1,10 +1,10 @@
 import { User } from "../models/users.model.js";
-import { ApiError } from "../utils/apiError";
+import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 // Here we are authenticating user if he is authenticated give access of user
 try {
-    const jwtVerify = asyncHandler(async (req, res, next) => {
+    var jwtVerify = asyncHandler(async (req, res, next) => {
         const accessToken = req?.cookies.accessToken || req?.header('Authorization').replace('');
         if(!accessToken) {
             return new ApiError(400, 'AccessToken not found')
