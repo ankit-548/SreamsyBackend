@@ -1,5 +1,5 @@
 import { User } from "../models/users.model.js";
-import { ApiError } from "../utils/apiError.js";
+import { ApiError } from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
@@ -11,14 +11,14 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 // })
 async function generateAccessAndRefreshToken(userId) {
     try {        
-        const user = User.findById(userId)
+        const user = await User.findById(userId)
         const accessToken = await user.generateAccessToken();
         const refreshToken = await user.generateRefreshToken();
         user.refreshToken = refreshToken;
         user.save({validateBeforeSave: false})
         return {accessToken, refreshToken}
     } catch (error) {
-        throw new ApiError(500, "There is some issue in generating tokens")
+        throw new ApiError(500, "There is some issue in generating tokens", [error])
     }
 }
 const registerUser = asyncHandler(async (req, res) => {
@@ -80,7 +80,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
 const loginUser = asyncHandler(async (req, res) => {
     // get user data
-    const {userName, password} = req.body;
+    const {userName, password, email} = req.body;
     // validate email/username and password not empty
     if((!userName && !email) || !password) {
         throw new ApiError(400, "userName/email and password are required")
@@ -90,12 +90,12 @@ const loginUser = asyncHandler(async (req, res) => {
         $or: [{userName}, {email}]
     })
     // match the password bcrypt
-    if(user.isCorrectPassword(password)) {
+    if(!user.isCorrectPassword(password)) {
         throw new ApiError(400, "Please enter correct password");
     }
     // generate accessToken and refreshToken
     // set user data in req.body.user
-    const {accessToken, refreshToken} = generateAccessAndRefreshToken(user._id)
+    const {accessToken, refreshToken} = await generateAccessAndRefreshToken(user._id)
     
     // response with cookies
     const options = {
@@ -115,8 +115,8 @@ const loginUser = asyncHandler(async (req, res) => {
 
 const logOutUser = asyncHandler(async (req, res) => {
     const user = req.user;
-    User.findByIdAndUpdate(user._id, {
-        refreshToken: undefined
+    const updatedUser = await User.findByIdAndUpdate(user._id, {
+        $unset: { refreshToken: "" }
     },
     {
       new: true  
@@ -128,8 +128,11 @@ const logOutUser = asyncHandler(async (req, res) => {
     }
 
     return res.status(200)
-    .clearCookies('accessToken', options)
-    .clearCookies('refreshToken', options)
+    .clearCookie('accessToken', options)
+    .clearCookie('refreshToken', options)
+    .json(
+        new ApiResponse(201, "User Logged out successfully", {updatedUser})
+    )
 });
 
 export {registerUser, loginUser, logOutUser}

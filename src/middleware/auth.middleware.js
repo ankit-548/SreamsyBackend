@@ -1,17 +1,19 @@
 import { User } from "../models/users.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import jwt from "jsonwebtoken"
 
 // Here we are authenticating user if he is authenticated give access of user
 try {
     var jwtVerify = asyncHandler(async (req, res, next) => {
-        const accessToken = req?.cookies.accessToken || req?.header('Authorization').replace('');
+        const accessToken = req?.cookies.accessToken || req?.header('Authorization')?.replace('');
         if(!accessToken) {
-            return new ApiError(400, 'AccessToken not found')
+            throw new ApiError(400, 'AccessToken not found')
         }
-        const user = User.findById(accessToken._id);
+        const decodedToken = jwt.verify(accessToken, process.env.JWT_ACCESS_TOKEN_SECRET)
+        const user = await User.findById(decodedToken?._id);
         if(!user) {
-            return new ApiError(400, 'User not fount')
+            throw new ApiError(400, 'User not fount')
         }
         req.user = user;
         next();

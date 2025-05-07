@@ -9,7 +9,7 @@ app.use(cors({
 }));
 app.use(express.json({limit: "16kb"}));
 app.use(express.urlencoded({
-    urlencoded: true,
+    extended: true,
     limit: "16kb"
 }));
 app.use(express.static("public"));
@@ -19,6 +19,8 @@ app.use(cookieParser());
 import userRouter from './routes/user.router.js';
 
 app.use('/api/v1/user', userRouter);
+
+
 
 
 export default app;
