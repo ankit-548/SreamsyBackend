@@ -3,6 +3,7 @@ import { ApiError } from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import jwt from 'jsonwebtoken'
 
 // const registerUser = asyncHandler(async (req, res) => {
 //     res.status(200).json({
@@ -90,7 +91,7 @@ const loginUser = asyncHandler(async (req, res) => {
         $or: [{userName}, {email}]
     })
     // match the password bcrypt
-    if(!user.isCorrectPassword(password)) {
+    if(! await user.isCorrectPassword(password)) {
         throw new ApiError(400, "Please enter correct password");
     }
     // generate accessToken and refreshToken
@@ -105,7 +106,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
     res.status(201)
     .cookie('accessToken', accessToken, options)
-    .cookie('refreshToken', accessToken, options)
+    .cookie('refreshToken', refreshToken, options)
     .json(
         new ApiResponse(
             200, 'User logged in successfully', { accessToken, refreshToken }
@@ -135,4 +136,44 @@ const logOutUser = asyncHandler(async (req, res) => {
     )
 });
 
-export {registerUser, loginUser, logOutUser}
+const accessRefreshToken = asyncHandler(async (req, res) => {
+    const incomingRefreshToken = req?.cookies.refreshToken || req?.body.refreshToken;
+
+    if(!incomingRefreshToken) {
+        throw new ApiError(400, 'refreshToken expired', [error])
+    }
+
+    const decodedToken = jwt.verify(incomingRefreshToken, process.env.JWT_REFRESH_TOKEN_SECRET)
+    try {
+    
+        const user = await User.findById(decodedToken._id)
+    
+        if(!user) {
+            throw new ApiError(400, 'invalid refreshToken', [error])
+        }
+        
+        if(incomingRefreshToken !== user.refreshToken) {
+            throw new ApiError(400, 'refreshToken expired or used', [error])
+        }
+    
+        const {accessToken, refreshToken} = await generateAccessAndRefreshToken(user._id);
+    
+        const options = {
+            httpOnly: true,
+            secure: true
+        }
+        res.status(200)
+        .cookie('accessToken', accessToken, options)
+        .cookie('refreshToken', refreshToken, options)
+        .json(
+            new ApiResponse(201, 'accessToken and refreshToken generated successfully', {
+                accessToken,
+                refreshToken
+            })
+        )
+    } catch (error) {
+        throw new ApiError(400, 'access token not generated', [error])
+    }
+})
+
+export {registerUser, loginUser, logOutUser, accessRefreshToken}
