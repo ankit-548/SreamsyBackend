@@ -1,3 +1,4 @@
+import { upload } from "../middleware/multer.middleware.js";
 import { User } from "../models/users.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
@@ -176,4 +177,131 @@ const accessRefreshToken = asyncHandler(async (req, res) => {
     }
 })
 
-export {registerUser, loginUser, logOutUser, accessRefreshToken}
+const changeCurrentPassword = asyncHandler(async (req, res) => {
+    const {currentPassword, newPassword}  = req.body;
+
+    if(!newPassword || !currentPassword) {
+        throw new ApiError(400, 'new password and current password are required', [error])
+    }
+
+    const user =  await User.findById(req.user._id);   
+
+    const passwordMatched = await user.isCorrectPassword(currentPassword)
+
+    if(!passwordMatched) {
+        throw new ApiError(400, "current password doesn't match")
+    }
+
+    user.password = newPassword;
+    await user.save({validateBeforeSave: false})
+
+    return res.status(200)
+    .json(
+        new ApiResponse(
+            201,
+            'Password updated successfully',
+            {}
+        )
+    )
+})
+
+const getCurrentUser = asyncHandler( async (req, res) => {
+    return res.status(200)
+    .json(
+        new ApiResponse(201, "User details found", res.user)
+    )
+})
+
+const updateUserDetail = asyncHandler( async (req, res) => {
+    const {userName, email} = req.body;
+
+    if(!userName || !email) {
+        throw new ApiError(400, 'userName and email are required', [error])
+    }
+
+    const user = User.findByIdAndUpdate(
+        res.user._id,
+        {
+            $set: {
+                userName, // we can write both way
+                email: email
+            }
+        }
+    ).select('-password')
+
+    return res.status(200)
+    .json(new ApiResponse(201, 'Details updated succefully', user))
+
+})
+
+const updateUserAvatar = asyncHandler( async (req, res) => {
+    const avatarPath = req?.file.path
+
+    if(!avatarPath) {
+        throw new ApiError(400, 'avatar file is missing', [error])
+    }
+
+    const avatar = await uploadOnCloudinary(avatarPath)
+
+    if(!avatar) {
+        throw new ApiError(400, 'avatar file is required', [error])
+    }
+
+    const user = await User.findByIdAndUpdate(
+        req.user._id,
+        {
+            $set: {
+                avatar: avatar.url
+            }
+        },
+        {
+            new: true
+        }
+    ).select('-password')
+
+    return res.status(200)
+    .json( new ApiResponse(201, 'avatar update succssfully', user))
+    
+})
+const updateUserCoverImage = asyncHandler( async (req, res) => {
+    const coverImagePath = req?.file.path
+
+    if(!coverImagePath) {
+        throw new ApiError(400, 'coverImage file is missing', [error])
+    }
+
+    const coverImage = await uploadOnCloudinary(coverImagePath)
+
+    if(!coverImage) {
+        throw new ApiError(400, 'coverImage file is required', [error])
+    }
+
+    const user = await User.findByIdAndUpdate(
+        req.user._id,
+        {
+            $set: {
+                coverImage: coverImage.url
+            }
+        },
+        {
+            new: true
+        }
+    ).select('-password')
+
+    return res.status(200)
+    .json( new ApiResponse(201, 'coverImage update succssfully', user))
+    
+})
+
+
+export {
+    registerUser, 
+    loginUser, 
+    logOutUser, 
+    accessRefreshToken,
+    changeCurrentPassword,
+    getCurrentUser,
+    updateUserDetail,
+    updateUserAvatar,
+    updateUserCoverImage
+}
