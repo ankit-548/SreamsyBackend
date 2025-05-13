@@ -1,3 +1,4 @@
+import { Aggregate } from "mongoose";
 import { upload } from "../middleware/multer.middleware.js";
 import { User } from "../models/users.model.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -293,6 +294,65 @@ const updateUserCoverImage = asyncHandler( async (req, res) => {
     
 })
 
+const getUserChannelDetails = asyncHandler( async (req, res) => {
+    const userName = req.params;
+
+    if(!userName?.trim()) {
+        throw new ApiError(400, 'userName is required', [error]);
+    }
+
+    const channel = User.aggregate([
+        {
+            $match: {userName: "$userName?.toLowerCase()"}
+        },
+        {
+            $lookup: {
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "subscriber",
+                as: "subscribers"
+            }
+        },
+        {
+            $lookup: {
+                from: subscriptions,
+                localField: _id,
+                foreignField: channel,
+                as: subscribedTo
+            }
+        },
+        {
+            $addFields:{
+                totalSubscribers: {
+                   $size: subscribers 
+                },
+                totalChannelSubscribedTO: {
+                    $size: subscribedTo
+                }
+            }
+        },
+        {
+            $project: {
+                userName,
+                fullName,
+                email,
+                totalSubscribers,
+                totalChannelSubscribedTO,
+                avatar,
+                coverImage
+            }
+        },
+    ])
+
+    if(!channel) {
+        throw new ApiError(400, "userName is not valid", [error])
+    }
+
+    return res.status(200)
+    .json( new ApiResponse(201, "user details found successfully", channel[0]))
+
+})
+
 
 export {
     registerUser, 
@@ -303,5 +363,6 @@ export {
     getCurrentUser,
     updateUserDetail,
     updateUserAvatar,
-    updateUserCoverImage
+    updateUserCoverImage,
+    getUserChannelDetails
 }
