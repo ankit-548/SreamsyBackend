@@ -315,31 +315,31 @@ const getUserChannelDetails = asyncHandler( async (req, res) => {
         },
         {
             $lookup: {
-                from: subscriptions,
-                localField: _id,
-                foreignField: channel,
-                as: subscribedTo
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "channel",
+                as: "subscribedTo"
             }
         },
         {
             $addFields:{
                 totalSubscribers: {
-                   $size: subscribers 
+                   $size: "$subscribers" 
                 },
                 totalChannelSubscribedTO: {
-                    $size: subscribedTo
+                    $size: "$subscribedTo"
                 }
             }
         },
         {
             $project: {
-                userName,
-                fullName,
-                email,
-                totalSubscribers,
-                totalChannelSubscribedTO,
-                avatar,
-                coverImage
+                userName: 1,
+                fullName: 1,
+                email: 1,
+                totalSubscribers: 1,
+                totalChannelSubscribedTO: 1,
+                avatar: 1,
+                coverImage: 1
             }
         },
     ])
