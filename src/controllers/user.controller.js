@@ -1,4 +1,4 @@
-import { Aggregate } from "mongoose";
+import mongoose, { Aggregate } from "mongoose";
 import { upload } from "../middleware/multer.middleware.js";
 import { User } from "../models/users.model.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -353,6 +353,56 @@ const getUserChannelDetails = asyncHandler( async (req, res) => {
 
 })
 
+const getUserWatchHistory = asyncHandler( async (req, res) => {
+    const history = User.aggregate([
+        {
+            $match: {_id: new mongoose.Types.ObjectId(req.user._id)},
+            
+        },
+        {
+            $lookup: {
+                from: "videoes", 
+                localField: "watchHistory",
+                foreignField: "_id",
+                as: "watchHistory",
+                pipeline: [
+                    {
+                        $lookup: {
+                            from: "users",
+                            localField: "owner",
+                            foreignField: "_id",
+                            as: "owner",
+                            pipeline: [
+                                {
+                                    $project: {
+                                        userName: 1,
+                                        fullName: 1,
+                                        avatar: 1
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        $addFields: {
+                            owner: { $first: "$owner"}
+                        }
+                    }
+                ]
+            },
+             
+        }
+
+    ])
+
+    if(!history) {
+        throw new ApiError(400, "No history found", [error])
+    }
+
+    return res.status(200)
+    .json( new ApiResponse(201, "History found successfully", history[0].watchHistory))
+})
+
 
 export {
     registerUser, 
@@ -364,5 +414,6 @@ export {
     updateUserDetail,
     updateUserAvatar,
     updateUserCoverImage,
-    getUserChannelDetails
+    getUserChannelDetails,
+    getUserWatchHistory
 }
