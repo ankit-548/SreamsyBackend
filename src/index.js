@@ -30,7 +30,7 @@
 
 
 // 2. Approach 2 - using separate file for connection code
-
+import app from './app.js';
 import connectDb from './db/index.js';
 // require('dotenv').config({path: './env'});  this will also work well but not consistent at other places we are using import statemnent
 import dotenv from 'dotenv';
