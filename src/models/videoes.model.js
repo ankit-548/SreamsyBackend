@@ -20,7 +20,6 @@ const videoesSchema = new mongoose.Schema({
     },
     description: {
         type: String,
-        required: true
     },
     duration: {
         type: Number,
@@ -28,7 +27,6 @@ const videoesSchema = new mongoose.Schema({
     },
     views: {
         type: Number,
-        required: true,
         default: 0
     },
     isPublished: {

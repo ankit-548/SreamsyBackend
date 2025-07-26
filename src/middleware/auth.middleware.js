@@ -13,7 +13,7 @@ try {
         const decodedToken = jwt.verify(accessToken, process.env.JWT_ACCESS_TOKEN_SECRET)
         const user = await User.findById(decodedToken?._id);
         if(!user) {
-            throw new ApiError(400, 'User not fount')
+            throw new ApiError(400, 'User not found')
         }
         req.user = user;
         next();

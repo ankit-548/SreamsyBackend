@@ -26,6 +26,7 @@ async function generateAccessAndRefreshToken(userId) {
 }
 const registerUser = asyncHandler(async (req, res) => {
     // GET user details from frontend
+    console.log('req: ', req)
     const {userName, email, fullName, password} = req.body;
     // validation - not empty
     if([userName, email, fullName, password].some((field) => 
@@ -66,7 +67,7 @@ const registerUser = asyncHandler(async (req, res) => {
         coverImage : coverImage?.url
     });
     
-    // remove password and refresh token field from reference
+    // remove password and refresh token field from reference to check created user
     const createdUser = await User.findById(user._id).select(
         
     );
@@ -103,7 +104,7 @@ const loginUser = asyncHandler(async (req, res) => {
     // response with cookies
     const options = {
         httpOnly: true,
-        secured: true
+        secure: false
     }
 
     res.status(201)
@@ -138,7 +139,7 @@ const logOutUser = asyncHandler(async (req, res) => {
     )
 });
 
-const accessRefreshToken = asyncHandler(async (req, res) => {
+const generateAccessRefreshToken = asyncHandler(async (req, res) => {
     const incomingRefreshToken = req?.cookies.refreshToken || req?.body.refreshToken;
 
     if(!incomingRefreshToken) {
@@ -209,7 +210,7 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
 const getCurrentUser = asyncHandler( async (req, res) => {
     return res.status(200)
     .json(
-        new ApiResponse(201, "User details found", res.user)
+        new ApiResponse(201, "User details found", req.user)
     )
 })
 
@@ -408,7 +409,7 @@ export {
     registerUser, 
     loginUser, 
     logOutUser, 
-    accessRefreshToken,
+    generateAccessRefreshToken,
     changeCurrentPassword,
     getCurrentUser,
     updateUserDetail,
